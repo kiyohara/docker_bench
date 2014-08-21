@@ -1,6 +1,9 @@
 #!/bin/bash
 
-echo "--> rm all docker ps"
+echo --------------------------------------------------
+echo "-> cleanup docker ps start `date`"
+echo --------------------------------------------------
+
 for i in `docker ps -aq`; do
   running=`docker inspect --format='{{.State.Running}}' $i`
   kill_flg=''
@@ -13,3 +16,7 @@ for i in `docker ps -aq`; do
   printf "%.4s[%srm]  " `docker rm $i` $kill_flg
 done
 printf "\n"
+
+echo --------------------------------------------------
+echo "<- cleanup docker ps finish `date`"
+echo --------------------------------------------------

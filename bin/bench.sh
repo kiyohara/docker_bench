@@ -5,8 +5,8 @@ if [ ! -d "$1" ];then
   exit 1
 fi
 
-DIR=$1
-source $DIR/vars.sh
+SUB_TEST_DIR=$1
+source $SUB_TEST_DIR/vars.sh
 
 if [ ! $CONTAINER_NAME ];then
   echo !! CONTAINER_NAME required ... stop !!
@@ -58,9 +58,10 @@ print_state_detail() {
 
 ################################################################################
 
-echo ==================================================
-echo $CONTAINER_NAME bench running... `date`
-echo ==================================================
+echo --------------------------------------------------
+echo "-> $SUB_TEST_DIR bench start `date`"
+echo "   docker container: $CONTAINER_NAME"
+echo --------------------------------------------------
 
 PROG_NAME=`basename $0`
 WORK_FILE=`mktemp /tmp/$PROG_NAME.XXXXXXXX`
@@ -104,6 +105,6 @@ done
 rm $WORK_FILE
 
 echo
-echo ==================================================
-echo $CONTAINER_NAME bench finish `date`
-echo ==================================================
+echo --------------------------------------------------
+echo "<- $SUB_TEST_DIR bench finish `date`"
+echo --------------------------------------------------
