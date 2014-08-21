@@ -1,16 +1,17 @@
 #!/bin/bash
 
-if [ ! -d "$1" ];then
-  echo !! container_dir required ... stop !!
-  exit 1
-fi
+BASE_DIR=containers
 
-DIR=$1
-source $DIR/vars.sh
+for i in `ls -1 $BASE_DIR`; do
+  CONTAINER_NAME=`basename $i`
 
-if [ ! $CONTAINER_NAME ];then
-  echo !! CONTAINER_NAME required ... stop !!
-  exit 1
-fi
+  echo --------------------------------------------------
+  echo $CONTAINER_NAME build start `date`
+  echo --------------------------------------------------
 
-docker build -t $CONTAINER_NAME $DIR
+  docker build -t $CONTAINER_NAME $BASE_DIR/$i
+
+  echo --------------------------------------------------
+  echo $CONTAINER_NAME build finish `date`
+  echo --------------------------------------------------
+done
