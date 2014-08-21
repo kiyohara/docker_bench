@@ -5,7 +5,10 @@
 BIN_PATH=$(cd `dirname $0`; pwd)
 OUT_DIR_BASE=out
 OUT_DIR_LAST=last
-OUT_PATH_BASE=$(cd $BIN_PATH/../$OUT_DIR_BASE; pwd)
+
+OUT_PATH_BASE=$BIN_PATH/../$OUT_DIR_BASE
+[ -d $OUT_PATH_BASE ] || mkdir -p $OUT_PATH_BASE
+OUT_PATH_BASE=$(cd $OUT_PATH_BASE; pwd)
 
 ######################################################################
 
