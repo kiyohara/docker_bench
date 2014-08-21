@@ -1,2 +1,12 @@
 out/**
 **/Gemfile.lock
+
+### https://raw.github.com/github/gitignore/Global/vim.gitignore
+
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+*~
+
