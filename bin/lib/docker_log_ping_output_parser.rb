@@ -22,7 +22,7 @@ class DockerLogPingOutputParser
     /icmp_seq=1 ttl=64 time=([\d\.]+)\sms/
   end
 
-  def headers
+  def parsed_headers
     [ 'first_ping_rtt' ]
   end
 

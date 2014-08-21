@@ -28,7 +28,7 @@ class TimeDockerRunOutputParser
     end
   end
 
-  def headers
+  def parsed_headers
     [ 'time_docker_run' ]
   end
 

@@ -9,7 +9,7 @@ Class.new do
   def after_run
     @containers.each_with_index do |cont, i|
       if i == 0
-        puts cont.header
+        puts cont.headers.join(',')
       end
       puts cont.to_s
     end

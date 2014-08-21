@@ -20,7 +20,7 @@ class MpstatOutputParser
     /all\s+([\d\.]+)\s+[\d\.]+\s+([\d\.]+)\s+[\d\.]+\s+[\d\.]+\s+[\d\.]+\s+[\d\.]+\s+[\d\.]+\s+[\d\.]+\s+[\d\.]+$/
   end
 
-  def headers
+  def parsed_headers
     [ "cpu_usr", "cpu_sys" ]
   end
 

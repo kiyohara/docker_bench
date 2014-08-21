@@ -19,8 +19,34 @@ class VmstatOutputParser
     /\d+\s+\d+\s+\d+\s+(\d+)\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+\s+\d+/
   end
 
-  def headers
+  def parsed_headers
     [ "mem_free" ]
+  end
+
+  def delta_headers
+    [
+      "mem_used_all_delta",
+      "mem_used_container",
+      "mem_used_container_ave",
+    ]
+  end
+
+  def calc_delta!(initial_data, prev_data, index)
+    super
+
+    mem_used_all_delta = initial_data.to_hash['mem_free'] - to_hash['mem_free']
+    if prev_data
+      mem_used_per_container = prev_data.to_hash['mem_free'] - to_hash['mem_free']
+    else
+      mem_used_per_container = mem_used_all_delta
+    end
+    mem_used_container_ave = mem_used_all_delta / index
+
+    @delta_data = [
+      mem_used_all_delta,
+      mem_used_per_container,
+      mem_used_container_ave,
+    ]
   end
 
   def sqlite_col_types

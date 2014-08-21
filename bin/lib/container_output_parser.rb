@@ -55,14 +55,29 @@ class ContainerOutputParser
     res
   end
 
-  def header
-    headers.join(',')
-  end
-
   def to_a
     res = [ @index ]
     @parsers.each do |parser|
       res.concat(parser.to_a)
+    end
+    res
+  end
+
+  def from_a(arr)
+    @index = arr.shift
+    @parsers.each do |parser|
+      arr = parser.from_a(arr)
+    end
+    self
+  end
+
+  def to_hash
+    res = {}
+    res.merge!({
+      'conteiner_num'=> @index
+    })
+    @parsers.each do |parser|
+      res.merge!(parser.to_hash)
     end
     res
   end
@@ -73,5 +88,11 @@ class ContainerOutputParser
       res.push(parser.to_s)
     end
     res.join(',')
+  end
+
+  def calc_delta!(initial_data, prev_data)
+    @parsers.each do |parser|
+      parser.calc_delta!(initial_data, prev_data, @index)
+    end
   end
 end
