@@ -2,8 +2,10 @@
 
 ######################################################################
 
+BIN_PATH=$(cd `dirname $0`; pwd)
 OUT_DIR_BASE=out
 OUT_DIR_LAST=last
+OUT_PATH_BASE=$(cd $BIN_PATH/../$OUT_DIR_BASE; pwd)
 
 ######################################################################
 
@@ -21,7 +23,7 @@ DATE=`date +%Y%m%d_%H%M%S`
 OUT_DIR_TEST_SET=${DATE}
 
 ########## create test set dir -->
-pushd $OUT_DIR_BASE >/dev/null
+pushd $OUT_PATH_BASE >/dev/null
 
 mkdir -p $OUT_DIR_TEST_SET
 
@@ -35,7 +37,7 @@ popd >/dev/null
 ########## create test set dir --<
 
 ########## create docker container -->
-bin/build_container.sh
+$BIN_PATH/build_container.sh
 ########## create docker container --<
 
 echo ======================================================================
@@ -52,22 +54,22 @@ for sub_test_dir in $SUB_TEST_DIRS;do
     exit 1
   fi
 
-  OUT_DIR_SUB_TEST=$OUT_DIR_BASE/$OUT_DIR_TEST_SET/${sub_test_dir}
+  OUT_DIR_SUB_TEST=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename ${sub_test_dir}`
   LOG_FILE=$OUT_DIR_SUB_TEST/log.txt
   DB_FILE=$OUT_DIR_SUB_TEST/parse.sqlite3
 
   # bench pre process
   mkdir -p $OUT_DIR_SUB_TEST
-  bin/clean_rm.sh
-  bin/restart_docker.sh
+  $BIN_PATH/clean_rm.sh
+  $BIN_PATH/restart_docker.sh
 
   # do bench
-  bin/bench.sh $sub_test_dir | tee $LOG_FILE
+  $BIN_PATH/bench.sh $sub_test_dir | tee $LOG_FILE
 
   # bench post process
   echo
   echo convert $LOG_FILE to $DB_FILE
-  bin/log2sqlite.rb -l $LOG_FILE -d $DB_FILE
+  $BIN_PATH/log2sqlite.rb -l $LOG_FILE -d $DB_FILE
 
   echo ======================================================================
   echo "<<-- test $sub_test_dir finish `date`"

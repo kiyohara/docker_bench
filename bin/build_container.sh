@@ -1,6 +1,7 @@
 #!/bin/bash
 
-BASE_DIR=containers
+BIN_PATH=$(cd `dirname $0`; pwd)
+BASE_DIR=$(cd $BIN_PATH/../containers; pwd)
 
 for i in `ls -1 $BASE_DIR`; do
   CONTAINER_NAME=`basename $i`
