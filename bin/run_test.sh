@@ -6,6 +6,10 @@ BIN_PATH=$(cd `dirname $0`; pwd)
 OUT_DIR_BASE=out
 OUT_DIR_LAST=last
 
+OUT_LOG_FILE=result.log
+OUT_DB_FILE=result.sqlite3
+OUT_CSV_FILE=result.csv
+
 OUT_PATH_BASE=$BIN_PATH/../$OUT_DIR_BASE
 [ -d $OUT_PATH_BASE ] || mkdir -p $OUT_PATH_BASE
 OUT_PATH_BASE=$(cd $OUT_PATH_BASE; pwd)
@@ -58,8 +62,9 @@ for sub_test_dir in $SUB_TEST_DIRS;do
   fi
 
   OUT_DIR_SUB_TEST=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename ${sub_test_dir}`
-  LOG_FILE=$OUT_DIR_SUB_TEST/log.txt
-  DB_FILE=$OUT_DIR_SUB_TEST/parse.sqlite3
+  OUT_LOG_PATH=$OUT_DIR_SUB_TEST/$OUT_LOG_FILE
+  OUT_DB_PATH=$OUT_DIR_SUB_TEST/$OUT_DB_FILE
+  OUT_CSV_PATH=$OUT_DIR_SUB_TEST/$OUT_CSV_FILE
 
   # bench pre process
   mkdir -p $OUT_DIR_SUB_TEST
@@ -67,12 +72,15 @@ for sub_test_dir in $SUB_TEST_DIRS;do
   $BIN_PATH/restart_docker.sh
 
   # do bench
-  $BIN_PATH/bench.sh $sub_test_dir | tee $LOG_FILE
+  $BIN_PATH/bench.sh $sub_test_dir | tee $OUT_LOG_PATH
 
   # bench post process
   echo
-  echo convert $LOG_FILE to $DB_FILE
-  $BIN_PATH/log2sqlite.rb -l $LOG_FILE -d $DB_FILE
+  echo "convert $OUT_LOG_FILE to $OUT_DB_FILE"
+  $BIN_PATH/log2sqlite.rb -l $OUT_LOG_PATH -d $OUT_DB_PATH
+
+  echo "analyze $OUT_DB_FILE (-> $OUT_CSV_FILE)"
+  $BIN_PATH/analyze.rb -d $OUT_DB_PATH > $OUT_CSV_PATH
 
   echo ======================================================================
   echo "<<-- test $sub_test_dir finish `date`"
