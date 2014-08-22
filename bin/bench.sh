@@ -67,7 +67,7 @@ PROG_NAME=`basename $0`
 WORK_FILE=`mktemp /tmp/$PROG_NAME.XXXXXXXX`
 
 CONTAINER_COUNT=${CONTAINER_COUNT:-1}
-DOCKER_RUN_PARAMS=${DOCKER_RUN_PARAMS:-''}
+DOCKER_RUN_PARAMS=${DOCKER_RUN_PARAMS:-'-d'}
 
 trap "echo !! trap signal !!; rm $WORK_FILE; exit" SIGHUP SIGINT SIGTERM
 
@@ -86,7 +86,7 @@ for i in `seq 1 $CONTAINER_COUNT`;do
 
   echo
   echo "----- time docker run ----->"
-  (time docker run -d $DOCKER_RUN_PARAMS $CONTAINER_NAME > /dev/null) 2>&1
+  (time docker run $DOCKER_RUN_PARAMS $CONTAINER_NAME $CONTAINER_RUN_CMD > /dev/null) 2>&1
   echo "----- time docker run -----<"
 
   container_id=`docker ps -lq`
