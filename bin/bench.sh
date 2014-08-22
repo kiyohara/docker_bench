@@ -15,7 +15,27 @@ fi
 
 ################################################################################
 
+_ps() {
+  local pid=${1:-''}
+
+  if [ $pid ];then
+    if [ $pid -gt 0 ]; then
+      ps -p $pid uw
+      return 0
+    else
+      # echo invalid pid($pid)
+      return 1
+    fi
+  else
+    # echo pid required
+    return 1
+  fi
+}
+
 print_state() {
+  local container_num=${1:-0}
+  local container_hash=${2:-''}
+
   echo
   echo "----- mpstat ----->"
   mpstat
@@ -26,10 +46,25 @@ print_state() {
   vmstat
   echo "----- vmstat -----<"
 
+  [ $DOCKER_IO_PID ] || DOCKER_IO_PID=`pgrep docker | head -1`
   echo
   echo "----- ps docker.io daemon ----->"
-  ps auxw | grep '/usr/bin/docker -d' | grep -v grep
+  _ps $DOCKER_IO_PID || echo "WARN: invalid pid($DOCKER_IO_PID) ... docker.io quit?"
   echo "----- ps docker.io daemon -----<"
+
+  if [ $container_hash ];then
+    echo
+    echo "----- docker logs tail ----->"
+    docker logs $container_hash | tail
+    echo "----- docker logs tail -----<"
+
+    local container_pid=`docker inspect $container_hash | jq .[0].State.Pid`
+
+    echo
+    echo "----- ps container process ----->"
+    _ps $container_pid || echo "WARN: invalid pid($container_pid) ... container quit?"
+    echo "----- ps container process ----->"
+  fi
 }
 
 print_state_detail() {
@@ -89,15 +124,10 @@ for i in `seq 1 $CONTAINER_COUNT`;do
   (time docker run $DOCKER_RUN_PARAMS $CONTAINER_NAME $CONTAINER_RUN_CMD > /dev/null) 2>&1
   echo "----- time docker run -----<"
 
-  container_id=`docker ps -lq`
+  container_hash=`docker ps -lq`
 
-  echo
-  echo "----- docker logs tail ----->"
-  docker logs $container_id | tail
-  echo "----- docker logs tail -----<"
-
-  print_state $i
-  print_state_detail $i
+  print_state $i $container_hash
+  print_state_detail $i $container_hash
 
   echo
   echo "===== run docker container #$i =====<"

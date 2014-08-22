@@ -1,4 +1,4 @@
-require_relative './command_output_parser'
+require_relative './ps_output_parser'
 
 =begin
 ----- ps docker.io daemon ----->
@@ -7,14 +7,10 @@ root     60642  5.0  0.1 341276 10088 ?        Ssl  20:18   0:00 /usr/bin/docker
 =end
 
 class PsDockerOutputParser
-  include CommandOutputParser
+  include PsOutputParser
 
   def separator_word
     "ps docker.io daemon"
-  end
-
-  def regexp_parse
-    /^\w+\s+\d+\s+[\d\.]+\s+[\d\.]+\s+(\d+)\s+(\d+)\s/
   end
 
   def parsed_headers
@@ -48,16 +44,12 @@ class PsDockerOutputParser
     docker_io_RSS_delta_ave = docker_io_RSS_all_delta / index
 
     @delta_data = [
-      docker_io_VSZ_delta,
-      docker_io_RSS_delta,
+      docker_io_VSZ_all_delta,
+      docker_io_RSS_all_delta,
       docker_io_VSZ_delta,
       docker_io_RSS_delta,
       docker_io_VSZ_delta_ave,
       docker_io_RSS_delta_ave,
     ]
-  end
-
-  def sqlite_col_types
-    [ 'int', 'int' ]
   end
 end

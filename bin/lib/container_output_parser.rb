@@ -3,6 +3,7 @@ require_relative './docker_log_ping_output_parser'
 require_relative './mpstat_output_parser'
 require_relative './vmstat_output_parser'
 require_relative './ps_docker_output_parser'
+require_relative './ps_container_output_parser'
 
 class ContainerOutputParser
   def initialize(index=nil)
@@ -11,6 +12,7 @@ class ContainerOutputParser
     @parsers = [
       TimeDockerRunOutputParser.new,
       DockerLogPingOutputParser.new,
+      PsContainerOutputParser.new,
       MpstatOutputParser.new,
       VmstatOutputParser.new,
       PsDockerOutputParser.new,
