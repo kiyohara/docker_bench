@@ -10,6 +10,13 @@ OUT_LOG_FILE=result.log
 OUT_DB_FILE=result.sqlite3
 OUT_CSV_FILE=result.csv
 
+OUT_CSV_FILTER=(
+  time_docker_run
+  mem_free
+  mem_used_all_delta
+  mem_used_container_ave
+)
+
 OUT_PATH_BASE=$BIN_PATH/../$OUT_DIR_BASE
 [ -d $OUT_PATH_BASE ] || mkdir -p $OUT_PATH_BASE
 OUT_PATH_BASE=$(cd $OUT_PATH_BASE; pwd)
@@ -66,21 +73,32 @@ for sub_test_dir in $SUB_TEST_DIRS;do
   OUT_DB_PATH=$OUT_DIR_SUB_TEST/$OUT_DB_FILE
   OUT_CSV_PATH=$OUT_DIR_SUB_TEST/$OUT_CSV_FILE
 
-  # bench pre process
+  # pre process
   mkdir -p $OUT_DIR_SUB_TEST
   $BIN_PATH/clean_rm.sh
   $BIN_PATH/restart_docker.sh
 
-  # do bench
+  # bench
   $BIN_PATH/bench.sh $sub_test_dir | tee $OUT_LOG_PATH
 
-  # bench post process
+  # post process
+  $BIN_PATH/clean_rm.sh
+
+  # parse output & analyze
   echo
   echo "convert $OUT_LOG_FILE to $OUT_DB_FILE"
   $BIN_PATH/log2sqlite.rb -l $OUT_LOG_PATH -d $OUT_DB_PATH
 
-  echo "analyze $OUT_DB_FILE (-> $OUT_CSV_FILE)"
+  echo "analyze $OUT_DB_FILE -> $OUT_CSV_FILE"
   $BIN_PATH/analyze.rb -d $OUT_DB_PATH > $OUT_CSV_PATH
+
+  for i in ${OUT_CSV_FILTER[@]};do
+    _out_csv_path=${OUT_CSV_PATH%.csv}__$i.csv
+    echo "analyze $OUT_DB_FILE -($i)-> `basename $_out_csv_path`"
+    $BIN_PATH/analyze.rb \
+      --filter "container_num,$i" \
+      -d $OUT_DB_PATH > $_out_csv_path
+  done
 
   echo ======================================================================
   echo "<<-- test $sub_test_dir finish `date`"
