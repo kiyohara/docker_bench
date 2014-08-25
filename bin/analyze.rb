@@ -8,12 +8,17 @@ Class.new do
   def parse_settings
     super.concat([
       ["--filter [[col_name],col_name...]", "filter col names"],
+      ["--separator [separator]",           "col separator"],
       ["--no-header",                       "output no header"],
     ])
   end
 
   def opt_filters
     @option['filter'] ? @option['filter'].split(',') : []
+  end
+
+  def opt_separator
+    @option['separator'] || ','
   end
 
   def opt_header
@@ -31,19 +36,19 @@ Class.new do
 
       if opt_filters.size > 0
         if index == 0 && opt_header
-          puts opt_filters.join(',')
+          puts opt_filters.join(opt_separator)
         end
         arr_out = []
         opt_filters.each do |filter|
           filtered = crr_data.to_hash[filter] || ''
           arr_out.push(filtered)
         end
-        puts arr_out.join(',')
+        puts arr_out.join(opt_separator)
       else
         if index == 0 && opt_header
-          puts crr_data.headers.join(',')
+          puts crr_data.headers.join(opt_separator)
         end
-        puts crr_data
+        puts crr_data.to_a.join(opt_separator)
       end
 
       prev_data = crr_data
