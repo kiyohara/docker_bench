@@ -10,12 +10,13 @@ OUT_LOG_FILE=result.log
 OUT_DB_FILE=result.sqlite3
 OUT_CSV_FILE=result.csv
 
-OUT_CSV_FILTER=(
-  time_docker_run
-  mem_free
-  mem_used_all_delta
-  mem_used_container_ave
+OUT_GRAPH=(
+  time_docker_run:sec
+  mem_free:byte
+  mem_used_all_delta:byte
+  mem_used_container_ave:byte
 )
+OUT_GRAPH_SIZE="1920,1080"
 
 OUT_PATH_BASE=$BIN_PATH/../$OUT_DIR_BASE
 [ -d $OUT_PATH_BASE ] || mkdir -p $OUT_PATH_BASE
@@ -106,3 +107,42 @@ for sub_test_dir in $SUB_TEST_DIRS;do
   echo "<<-- test $sub_test_dir finish `date`"
   echo ======================================================================
 done
+
+echo ======================================================================
+echo "-->> ALL test compare start `date`"
+echo ======================================================================
+
+pushd $OUT_PATH_BASE/$OUT_DIR_TEST_SET >/dev/null
+
+for i in ${OUT_GRAPH[@]};do
+  _filter_name=`echo $i | cut -d':' -f 1`
+  _ylabel=`echo $i | cut -d':' -f 2`
+
+  _plot_params=''
+  for _sub_test_dir in $SUB_TEST_DIRS;do
+    _plot_dat_path="$_sub_test_dir/${OUT_CSV_FILE%.csv}__${_filter_name}_plot.dat"
+    _plot_param="'$_plot_dat_path' title '$_sub_test_dir'"
+
+    if [ -n "$_plot_params" ];then
+      _plot_params="$_plot_params,$_plot_param"
+    else
+      _plot_params="$_plot_param"
+    fi
+  done
+
+  _out_png_path=${_filter_name}.png
+
+  gnuplot -e " \
+    set terminal png size $OUT_GRAPH_SIZE; \
+    set out '$_out_png_path'; \
+    set xlabel '# of container'; \
+    set ylabel '$_ylabel'; \
+    plot $_plot_params; \
+  "
+done
+
+popd >/dev/null
+
+echo ======================================================================
+echo "-->> ALL test compare finish `date`"
+echo ======================================================================
