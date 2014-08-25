@@ -51,7 +51,9 @@ popd >/dev/null
 ########## create test set dir --<
 
 ########## create docker container -->
-$BIN_PATH/build_container.sh
+if [ ! $SKIP_DOCKER_BUILD ]; then
+  $BIN_PATH/build_container.sh
+fi
 ########## create docker container --<
 
 echo ======================================================================
