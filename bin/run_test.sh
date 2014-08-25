@@ -61,28 +61,29 @@ echo ======================================================================
 echo "<<-- test prepare finish `date`"
 echo ======================================================================
 
-for sub_test_dir in $SUB_TEST_DIRS;do
+for _sub_test_dir in $SUB_TEST_DIRS;do
+
   echo ======================================================================
-  echo "-->> test $sub_test_dir start `date`"
+  echo "-->> test $_sub_test_dir start `date`"
   echo ======================================================================
 
-  if [ ! -e $sub_test_dir/vars.sh ];then
-    echo !! $sub_test_dir/vars.sh required ... stop !!
+  if [ ! -e $_sub_test_dir/vars.sh ];then
+    echo !! $_sub_test_dir/vars.sh required ... stop !!
     exit 1
   fi
 
-  OUT_DIR_SUB_TEST=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename ${sub_test_dir}`
-  OUT_LOG_PATH=$OUT_DIR_SUB_TEST/$OUT_LOG_FILE
-  OUT_DB_PATH=$OUT_DIR_SUB_TEST/$OUT_DB_FILE
-  OUT_CSV_PATH=$OUT_DIR_SUB_TEST/$OUT_CSV_FILE
+  _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename ${_sub_test_dir}`
+  _out_log_path=$_out_dir_sub_test/$OUT_LOG_FILE
+  _out_db_path=$_out_dir_sub_test/$OUT_DB_FILE
+  _out_cvs_path=$_out_dir_sub_test/$OUT_CSV_FILE
 
   # pre process
-  mkdir -p $OUT_DIR_SUB_TEST
+  mkdir -p $_out_dir_sub_test
   $BIN_PATH/clean_rm.sh
   $BIN_PATH/restart_docker.sh
 
   # bench
-  $BIN_PATH/bench.sh $sub_test_dir | tee $OUT_LOG_PATH
+  $BIN_PATH/bench.sh $_sub_test_dir | tee $_out_log_path
 
   # post process
   $BIN_PATH/clean_rm.sh
@@ -90,21 +91,40 @@ for sub_test_dir in $SUB_TEST_DIRS;do
   # parse output & analyze
   echo
   echo "convert $OUT_LOG_FILE to $OUT_DB_FILE"
-  $BIN_PATH/log2sqlite.rb -l $OUT_LOG_PATH -d $OUT_DB_PATH
+  $BIN_PATH/log2sqlite.rb -l $_out_log_path -d $_out_db_path
 
   echo "analyze $OUT_DB_FILE -> $OUT_CSV_FILE"
-  $BIN_PATH/analyze.rb -d $OUT_DB_PATH > $OUT_CSV_PATH
+  $BIN_PATH/analyze.rb -d $_out_db_path > $_out_cvs_path
 
-  for i in ${OUT_CSV_FILTER[@]};do
-    _out_csv_path=${OUT_CSV_PATH%.csv}__$i.csv
-    echo "analyze $OUT_DB_FILE -($i)-> `basename $_out_csv_path`"
+  for i in ${OUT_GRAPH[@]};do
+    _filter_name=`echo $i | cut -d':' -f 1`
+    _ylabel=`echo $i | cut -d':' -f 2`
+
+    _out_csv_path=${_out_cvs_path%.csv}__$_filter_name.csv
+    echo "analyze $OUT_DB_FILE -($_filter_name)-> `basename $_out_csv_path`"
     $BIN_PATH/analyze.rb \
-      --filter "container_num,$i" \
-      -d $OUT_DB_PATH > $_out_csv_path
+      --filter "container_num,$_filter_name" \
+      -d $_out_db_path > $_out_csv_path
+
+    _out_plot_dat_path=${_out_csv_path%.csv}_plot.dat
+    $BIN_PATH/analyze.rb \
+      --filter "container_num,$_filter_name" \
+      --separator " " \
+      --no-header \
+      -d $_out_db_path > $_out_plot_dat_path
+
+    _out_png_path=${_out_plot_dat_path%.dat}.png
+    gnuplot -e " \
+      set terminal png size $OUT_GRAPH_SIZE; \
+      set out '$_out_png_path'; \
+      set xlabel '# of container'; \
+      set ylabel '$_ylabel'; \
+      plot '$_out_plot_dat_path' title '$_filter_name'; \
+    "
   done
 
   echo ======================================================================
-  echo "<<-- test $sub_test_dir finish `date`"
+  echo "<<-- test $_sub_test_dir finish `date`"
   echo ======================================================================
 done
 
