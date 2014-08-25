@@ -76,7 +76,7 @@ class ContainerOutputParser
   def to_hash
     res = {}
     res.merge!({
-      'conteiner_num'=> @index
+      'container_num'=> @index
     })
     @parsers.each do |parser|
       res.merge!(parser.to_hash)
