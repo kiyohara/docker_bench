@@ -3,6 +3,9 @@
 ######################################################################
 
 BIN_PATH=$(cd `dirname $0`; pwd)
+TEST_DIR_BASE=tests
+DEFAULT_VAR_FILE=default_vars.sh
+FORCE_VAR_FILE=force_vars.sh
 OUT_DIR_BASE=out
 OUT_DIR_LAST=last
 
@@ -30,8 +33,13 @@ echo ======================================================================
 
 if [ -d "$1" ];then
   SUB_TEST_DIRS=$1
+elif [ -d "./$TEST_DIR_BASE" ];then
+  SUB_TEST_DIRS=`find ./$TEST_DIR_BASE/* -maxdepth 1 -type d`
+  DEFAULT_VAR_PATH=`find ./$TEST_DIR_BASE/$DEFAULT_VAR_FILE -maxdepth 1 2>/dev/null`
+  FORCE_VAR_PATH=`find ./$TEST_DIR_BASE/$FORCE_VAR_FILE -maxdepth 1 2>/dev/null`
 else
-  SUB_TEST_DIRS=`ls -1 -d _*`
+  echo "Error: `pwd`/$TEST_DIR_BASE/<sub_test_dir>/vars.sh required"
+  exit 1
 fi
 
 DATE=`date +%Y%m%d_%H%M%S`
@@ -67,12 +75,7 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
   echo "-->> test $_sub_test_dir start `date`"
   echo ======================================================================
 
-  if [ ! -e $_sub_test_dir/vars.sh ];then
-    echo !! $_sub_test_dir/vars.sh required ... stop !!
-    exit 1
-  fi
-
-  _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename ${_sub_test_dir}`
+  _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename $_sub_test_dir`
   _out_log_path=$_out_dir_sub_test/$OUT_LOG_FILE
   _out_db_path=$_out_dir_sub_test/$OUT_DB_FILE
   _out_cvs_path=$_out_dir_sub_test/$OUT_CSV_FILE
@@ -83,7 +86,9 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
   $BIN_PATH/restart_docker.sh
 
   # bench
-  $BIN_PATH/bench.sh $_sub_test_dir | tee $_out_log_path
+  $BIN_PATH/bench.sh $DEFAULT_VAR_PATH $_sub_test_dir $FORCE_VAR_PATH \
+    | tee $_out_log_path
+  [ ${PIPESTATUS[0]} -gt 0 ] && exit 1
 
   # post process
   $BIN_PATH/clean_rm.sh
@@ -140,8 +145,9 @@ for i in ${OUT_GRAPH[@]};do
 
   _plot_params=''
   for _sub_test_dir in $SUB_TEST_DIRS;do
-    _plot_dat_path="$_sub_test_dir/${OUT_CSV_FILE%.csv}__${_filter_name}_plot.dat"
-    _plot_param="'$_plot_dat_path' title '$_sub_test_dir'"
+    _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename $_sub_test_dir`
+    _plot_dat_path="$_out_dir_sub_test/${OUT_CSV_FILE%.csv}__${_filter_name}_plot.dat"
+    _plot_param="'$_plot_dat_path' title '`basename $_sub_test_dir`'"
 
     if [ -n "$_plot_params" ];then
       _plot_params="$_plot_params,$_plot_param"

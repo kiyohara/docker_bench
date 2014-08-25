@@ -1,3 +1,2 @@
 CONTAINER_NAME=ping_local
-CONTAINER_COUNT=100
 DOCKER_RUN_PARAMS='-d --net="none"'

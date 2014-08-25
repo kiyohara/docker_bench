@@ -1,15 +1,33 @@
 #!/bin/bash
 
-if [ ! -d "$1" ];then
-  echo !! sub_test_dir required ... stop !!
+load_vars(){
+  local var_file
+  if [ -f "$1" ];then
+    var_file=$1
+    source $var_file
+    return 0
+  elif [ -d "$1" ];then
+    var_file=$1/vars.sh
+    load_vars $var_file
+    return $?
+  else
+    echo "Error: $1 not found"
+    return 1
+  fi
+}
+
+if [ ! $1 ];then
+  echo "Usage: `basename $0` <test_set_dir>"
   exit 1
 fi
+for i in $@; do
+  if ! load_vars $i; then
+    exit 1
+  fi
+done
 
-SUB_TEST_DIR=$1
-source $SUB_TEST_DIR/vars.sh
-
-if [ ! $CONTAINER_NAME ];then
-  echo !! CONTAINER_NAME required ... stop !!
+if [ -z "$CONTAINER_NAME" ];then
+  echo "Error: var \$CONTAINER_NAME required"
   exit 1
 fi
 
