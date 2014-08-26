@@ -1,1 +1,2 @@
+TEST_DESCRIPTION="ping to 127.0.0.1"
 CONTAINER_NAME=ping_local

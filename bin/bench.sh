@@ -1,27 +1,19 @@
 #!/bin/bash
 
-load_vars(){
-  local var_file
-  if [ -f "$1" ];then
-    var_file=$1
-    source $var_file
-    return 0
-  elif [ -d "$1" ];then
-    var_file=$1/vars.sh
-    load_vars $var_file
-    return $?
-  else
-    echo "Error: $1 not found"
-    return 1
-  fi
-}
+######################################################################
+
+BIN_PATH=$(cd `dirname $0`; pwd)
+source $BIN_PATH/lib/util.sh
+
+######################################################################
 
 if [ ! $1 ];then
   echo "Usage: `basename $0` <test_set_dir>"
   exit 1
 fi
 for i in $@; do
-  if ! load_vars $i; then
+  if ! _load_vars $i; then
+    echo "Error: $1 not found"
     exit 1
   fi
 done
@@ -32,23 +24,6 @@ if [ -z "$CONTAINER_NAME" ];then
 fi
 
 ################################################################################
-
-_ps() {
-  local pid=${1:-''}
-
-  if [ $pid ];then
-    if [ $pid -gt 0 ]; then
-      ps -p $pid uw
-      return 0
-    else
-      # echo invalid pid($pid)
-      return 1
-    fi
-  else
-    # echo pid required
-    return 1
-  fi
-}
 
 print_state() {
   local container_num=${1:-0}

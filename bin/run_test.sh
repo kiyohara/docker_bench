@@ -3,27 +3,16 @@
 ######################################################################
 
 BIN_PATH=$(cd `dirname $0`; pwd)
-TEST_DIR_BASE=tests
-DEFAULT_VAR_FILE=default_vars.sh
-FORCE_VAR_FILE=force_vars.sh
-OUT_DIR_BASE=out
-OUT_DIR_LAST=last
+source $BIN_PATH/lib/util.sh
 
-OUT_LOG_FILE=result.log
-OUT_DB_FILE=result.sqlite3
-OUT_CSV_FILE=result.csv
+######################################################################
 
-OUT_GRAPH=(
-  time_docker_run:sec
-  mem_free:byte
-  mem_used_all_delta:byte
-  mem_used_container_ave:byte
+GRAPH_SETTINGS=(
+  time_docker_run::sec
+  mem_free::byte
+  mem_used_all_delta::byte
+  mem_used_container_ave::byte
 )
-OUT_GRAPH_SIZE="1920,1080"
-
-OUT_PATH_BASE=$BIN_PATH/../$OUT_DIR_BASE
-[ -d $OUT_PATH_BASE ] || mkdir -p $OUT_PATH_BASE
-OUT_PATH_BASE=$(cd $OUT_PATH_BASE; pwd)
 
 ######################################################################
 
@@ -33,28 +22,27 @@ echo ======================================================================
 
 if [ -d "$1" ];then
   SUB_TEST_DIRS=$1
-elif [ -d "./$TEST_DIR_BASE" ];then
-  SUB_TEST_DIRS=`find ./$TEST_DIR_BASE/* -maxdepth 1 -type d`
-  DEFAULT_VAR_PATH=`find ./$TEST_DIR_BASE/$DEFAULT_VAR_FILE -maxdepth 1 2>/dev/null`
-  FORCE_VAR_PATH=`find ./$TEST_DIR_BASE/$FORCE_VAR_FILE -maxdepth 1 2>/dev/null`
+elif [ -d "./$TEST_SET_DIR_NAME" ];then
+  SUB_TEST_DIRS=`_find_dir ./$TEST_SET_DIR_NAME`
+  DEFAULT_VAR_PATH=`_find_file ./$TEST_SET_DIR_NAME/$DEFAULT_VAR_FILE_NAME`
+  FORCE_VAR_PATH=`_find_file ./$TEST_SET_DIR_NAME/$FORCE_VAR_FILE_NAME`
 else
-  echo "Error: `pwd`/$TEST_DIR_BASE/<sub_test_dir>/vars.sh required"
+  echo "Error: `pwd`/$TEST_SET_DIR_NAME/<sub_test_dir>/$VAR_FILE_NAME required"
   exit 1
 fi
 
-DATE=`date +%Y%m%d_%H%M%S`
-OUT_DIR_TEST_SET=${DATE}
-
 ########## create test set dir -->
-pushd $OUT_PATH_BASE >/dev/null
+RESULT_DIR_PATH=$BIN_PATH/../$RESULT_DIR_NAME/`_date`
+[ -d $RESULT_DIR_PATH ] || mkdir -p $RESULT_DIR_PATH
+RESULT_DIR_PATH=$(cd $RESULT_DIR_PATH; pwd)
 
-mkdir -p $OUT_DIR_TEST_SET
+pushd `dirname $RESULT_DIR_PATH` >/dev/null
 
 # create 'last' symlink
-if [ -s $OUT_DIR_LAST ];then
-  rm $OUT_DIR_LAST
+if [ -s $RESULT_DIR_SHORTCUT_NAME ];then
+  rm $RESULT_DIR_SHORTCUT_NAME
 fi
-ln -s $OUT_DIR_TEST_SET $OUT_DIR_LAST
+ln -s `basename $RESULT_DIR_PATH` $RESULT_DIR_SHORTCUT_NAME
 
 popd >/dev/null
 ########## create test set dir --<
@@ -75,10 +63,10 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
   echo "-->> test $_sub_test_dir start `date`"
   echo ======================================================================
 
-  _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename $_sub_test_dir`
-  _out_log_path=$_out_dir_sub_test/$OUT_LOG_FILE
-  _out_db_path=$_out_dir_sub_test/$OUT_DB_FILE
-  _out_cvs_path=$_out_dir_sub_test/$OUT_CSV_FILE
+  _out_dir_sub_test=$RESULT_DIR_PATH/`basename $_sub_test_dir`
+  _out_log_path=$_out_dir_sub_test/$RESULT_LOG_FILE_NAME
+  _out_db_path=$_out_dir_sub_test/$RESULT_DB_FILE_NAME
+  _out_cvs_path=$_out_dir_sub_test/$RESULT_CSV_FILE_NAME
 
   # pre process
   mkdir -p $_out_dir_sub_test
@@ -95,18 +83,19 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
 
   # parse output & analyze
   echo
-  echo "convert $OUT_LOG_FILE to $OUT_DB_FILE"
+  echo "convert $RESULT_LOG_FILE_NAME to $RESULT_DB_FILE_NAME"
   $BIN_PATH/log2sqlite.rb -l $_out_log_path -d $_out_db_path
 
-  echo "analyze $OUT_DB_FILE -> $OUT_CSV_FILE"
+  echo "analyze $RESULT_DB_FILE_NAME -> $RESULT_CSV_FILE_NAME"
   $BIN_PATH/analyze.rb -d $_out_db_path > $_out_cvs_path
 
-  for i in ${OUT_GRAPH[@]};do
+  for i in ${GRAPH_SETTINGS[@]};do
     _filter_name=`echo $i | cut -d':' -f 1`
-    _ylabel=`echo $i | cut -d':' -f 2`
+    _graph_title=`echo $i | cut -d':' -f 2`
+    _ylabel=`echo $i | cut -d':' -f 3`
 
     _out_csv_path=${_out_cvs_path%.csv}__$_filter_name.csv
-    echo "analyze $OUT_DB_FILE -($_filter_name)-> `basename $_out_csv_path`"
+    echo "analyze $RESULT_DB_FILE_NAME -($_filter_name)-> `basename $_out_csv_path`"
     $BIN_PATH/analyze.rb \
       --filter "container_num,$_filter_name" \
       -d $_out_db_path > $_out_csv_path
@@ -119,9 +108,11 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
       -d $_out_db_path > $_out_plot_dat_path
 
     _out_png_path=${_out_plot_dat_path%.dat}.png
+    _graph_title=${_graph_title:-$_filter_name}
     gnuplot -e " \
-      set terminal png size $OUT_GRAPH_SIZE; \
+      set terminal png size $RESULT_GRAPH_SIZE; \
       set out '$_out_png_path'; \
+      set title '$_graph_title'; \
       set xlabel '# of container'; \
       set ylabel '$_ylabel'; \
       plot '$_out_plot_dat_path' title '$_filter_name'; \
@@ -137,17 +128,19 @@ echo ======================================================================
 echo "-->> ALL test compare start `date`"
 echo ======================================================================
 
-pushd $OUT_PATH_BASE/$OUT_DIR_TEST_SET >/dev/null
-
-for i in ${OUT_GRAPH[@]};do
+for i in ${GRAPH_SETTINGS[@]};do
   _filter_name=`echo $i | cut -d':' -f 1`
-  _ylabel=`echo $i | cut -d':' -f 2`
+  _graph_title=`echo $i | cut -d':' -f 2`
+  _ylabel=`echo $i | cut -d':' -f 3`
 
   _plot_params=''
   for _sub_test_dir in $SUB_TEST_DIRS;do
-    _out_dir_sub_test=$OUT_PATH_BASE/$OUT_DIR_TEST_SET/`basename $_sub_test_dir`
-    _plot_dat_path="$_out_dir_sub_test/${OUT_CSV_FILE%.csv}__${_filter_name}_plot.dat"
-    _plot_param="'$_plot_dat_path' title '`basename $_sub_test_dir`'"
+    _load_vars $_sub_test_dir/$VAR_FILE_NAME
+    _test_title=${TEST_DESCRIPTION:-`basename $_sub_test_dir`}
+
+    _out_dir_sub_test=$RESULT_DIR_PATH/`basename $_sub_test_dir`
+    _plot_dat_path="$_out_dir_sub_test/${RESULT_FILE_BASENAME}__${_filter_name}_plot.dat"
+    _plot_param="'$_plot_dat_path' title '$_test_title'"
 
     if [ -n "$_plot_params" ];then
       _plot_params="$_plot_params,$_plot_param"
@@ -157,17 +150,21 @@ for i in ${OUT_GRAPH[@]};do
   done
 
   _out_png_path=${_filter_name}.png
+  _graph_title=${_graph_title:-$_filter_name}
+
+  pushd $RESULT_DIR_PATH >/dev/null
 
   gnuplot -e " \
-    set terminal png size $OUT_GRAPH_SIZE; \
+    set terminal png size $RESULT_GRAPH_SIZE; \
     set out '$_out_png_path'; \
+    set title '$_graph_title'; \
     set xlabel '# of container'; \
     set ylabel '$_ylabel'; \
     plot $_plot_params; \
   "
-done
 
-popd >/dev/null
+  popd >/dev/null
+done
 
 echo ======================================================================
 echo "-->> ALL test compare finish `date`"
