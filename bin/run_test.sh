@@ -32,19 +32,29 @@ else
 fi
 
 ########## create test set dir -->
-RESULT_DIR_PATH=$BIN_PATH/../$RESULT_DIR_NAME/`_date`
-[ -d $RESULT_DIR_PATH ] || mkdir -p $RESULT_DIR_PATH
-RESULT_DIR_PATH=$(cd $RESULT_DIR_PATH; pwd)
+if [ $ANALYZE_ONLY ]; then
+  RESULT_DIR_PATH=$BIN_PATH/../$RESULT_DIR_NAME/$RESULT_DIR_SHORTCUT_NAME
+  SKIP_DOCKER_BUILD=1
 
-pushd `dirname $RESULT_DIR_PATH` >/dev/null
+  if [ ! -d $RESULT_DIR_PATH ];then
+    echo "Error: $RESULT_DIR_PATH not found"
+    exit 1
+  fi
+else
+  RESULT_DIR_PATH=$BIN_PATH/../$RESULT_DIR_NAME/`_date`
+  [ -d $RESULT_DIR_PATH ] || mkdir -p $RESULT_DIR_PATH
+  RESULT_DIR_PATH=$(cd $RESULT_DIR_PATH; pwd)
 
-# create 'last' symlink
-if [ -s $RESULT_DIR_SHORTCUT_NAME ];then
-  rm $RESULT_DIR_SHORTCUT_NAME
+  pushd `dirname $RESULT_DIR_PATH` >/dev/null
+
+  # create 'last' symlink
+  if [ -h $RESULT_DIR_SHORTCUT_NAME ];then
+    rm $RESULT_DIR_SHORTCUT_NAME
+  fi
+  ln -s `basename $RESULT_DIR_PATH` $RESULT_DIR_SHORTCUT_NAME
+
+  popd >/dev/null
 fi
-ln -s `basename $RESULT_DIR_PATH` $RESULT_DIR_SHORTCUT_NAME
-
-popd >/dev/null
 ########## create test set dir --<
 
 ########## create docker container -->
@@ -68,22 +78,25 @@ for _sub_test_dir in $SUB_TEST_DIRS;do
   _out_db_path=$_out_dir_sub_test/$RESULT_DB_FILE_NAME
   _out_cvs_path=$_out_dir_sub_test/$RESULT_CSV_FILE_NAME
 
-  # pre process
-  mkdir -p $_out_dir_sub_test
-  $BIN_PATH/clean_rm.sh
-  $BIN_PATH/restart_docker.sh
+  if [ ! $ANALYZE_ONLY ];then
+    # pre process
+    mkdir -p $_out_dir_sub_test
+    $BIN_PATH/clean_rm.sh
+    $BIN_PATH/restart_docker.sh
 
-  # bench
-  $BIN_PATH/bench.sh $DEFAULT_VAR_PATH $_sub_test_dir $FORCE_VAR_PATH \
-    | tee $_out_log_path
-  [ ${PIPESTATUS[0]} -gt 0 ] && exit 1
+    # bench
+    $BIN_PATH/bench.sh $DEFAULT_VAR_PATH $_sub_test_dir $FORCE_VAR_PATH \
+      | tee $_out_log_path
+    [ ${PIPESTATUS[0]} -gt 0 ] && exit 1
 
-  # post process
-  $BIN_PATH/clean_rm.sh
+    # post process
+    $BIN_PATH/clean_rm.sh
+  fi
 
   # parse output & analyze
   echo
   echo "convert $RESULT_LOG_FILE_NAME to $RESULT_DB_FILE_NAME"
+  [ -e "$_out_db_path" ] && rm $_out_db_path # for ANALYZE_ONLY retry
   $BIN_PATH/log2sqlite.rb -l $_out_log_path -d $_out_db_path
 
   echo "analyze $RESULT_DB_FILE_NAME -> $RESULT_CSV_FILE_NAME"
