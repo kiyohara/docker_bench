@@ -42,6 +42,20 @@ docker_bench
 一方で、コンテナ数が増えた際に `docker` コマンド自体が非常に遅くなることがわかっている。
 ready 検知の時間が（ `docker logs` コマンドの遅延分が加算され）実際より長く誤観測される可能性は高い。
 
+### 出力サンプル
+
+* `mem_free.png`
+![](./result_sample/mem_free.png)
+
+* `mem_used_all_delta.png`
+![](./result_sample/mem_used_all_delta.png)
+
+* `mem_used_container_ave.png`
+![](./result_sample/mem_used_container_ave.png)
+
+* `time_docker_run.png`
+![](./result_sample/time_docker_run.png)
+
 ### 動作要件 [^2]
 * nopass で sudo を実行できるテスト用ユーザー
 * コマンド&ライブラリ
