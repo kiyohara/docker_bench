@@ -56,7 +56,7 @@ docker_bench
 
 ### 動作要件 (※2)
 * 必要となるテスト用ユーザー
-  * no password で sudo を実行できるユーザー
+  * no password で `sudo` を実行できるユーザー
 * 必要となるコマンド&ライブラリ
   * sudo
   * service
@@ -162,7 +162,7 @@ docker_bench
 IP address は `docker inspect` を用いて調査すること。
 `docker_bench/containers/test4/ssh.sh` を用いて、最後に起動したコンテナにログインできる。
 
-### Ubuntu でのインストール手順
+### Ubuntu でのテスト環境構築手順
 
 ```
 ## テスト用の user を no password で sudo 可能にする
